@@ -1,0 +1,56 @@
+# environment.yml: the conda environment for the whole pipeline.
+#
+# One environment and one notebook kernel serve all five models, the data
+# preparation notebooks and the table and figure scripts:
+#
+#   conda env create -f environment.yml
+#   conda activate uq-flags
+#   python -m ipykernel install --user --name uq-flags --display-name "UQ flags"
+#
+# Every notebook in the repository opens on the "UQ flags" kernel.
+#
+# Two settings keep PyMC and TensorFlow in one process. On macOS a NumPy ABI
+# mismatch between them shows up as a kernel that stops with no Python error.
+#   numpy <2      both stacks build against the NumPy 1.26 ABI
+#   conda-forge   one channel only, since mixing it with the Anaconda defaults
+#                 channel is the other common cause of a broken environment
+#
+# Fallback, for a platform where conda-forge carries no TensorFlow build: delete the
+# tensorflow line below, uncomment the two pip lines at the end, and create the
+# environment again. The NumPy pin keeps the pip wheel compatible.
+
+name: uq-flags
+
+channels:
+  - conda-forge
+  - nodefaults
+
+dependencies:
+  - python=3.11
+  - numpy<2
+  - pandas
+  - scipy
+  - scikit-learn<1.10   # LogisticRegression 'penalty' is removed in 1.10 and SVC
+                        # 'probability' in 1.11, and models/ml_LogReg.py and
+                        # models/ml_SVM.py use both. The pin keeps the fitted models
+                        # identical to the reported ones.
+  - matplotlib
+  - seaborn
+
+  # models
+  - pymc>=5.10          # Bayesian logistic regression; brings pytensor and BLAS
+  - arviz               # NetCDF backend for trace.to_netcdf in models/ml_Bayesian.py
+  - xgboost             # XGBoost ensemble
+  - tensorflow          # Monte Carlo dropout network
+
+  # data preparation
+  - pymssql             # SQL Server client imported by data_clean.ipynb and data_split.ipynb
+
+  # notebooks
+  - jupyterlab
+  - ipykernel
+  - pip
+
+  # Fallback only: uncomment these two lines and delete the tensorflow line above
+  # - pip:
+  #     - tensorflow
